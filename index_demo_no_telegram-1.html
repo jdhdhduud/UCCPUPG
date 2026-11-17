@@ -1,0 +1,1400 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>شحن UC ببجي</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+  <script id="CaptchaScript" src="https://t-captcha.gjacky.com/Captcha.js"></script>
+
+  <style>
+    body { margin: 0; padding: 0; }
+
+    @keyframes gold-pulse {
+      0% { box-shadow: 0 0 5px rgba(197, 163, 103, 0.2); }
+      50% { box-shadow: 0 0 15px rgba(197, 163, 103, 0.4); }
+      100% { box-shadow: 0 0 5px rgba(197, 163, 103, 0.2); }
+    }
+    @keyframes shine-sweep {
+      0% { left: -100%; }
+      100% { left: 100%; }
+    }
+    @keyframes cta-pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.02); }
+    }
+    @keyframes slideUpModal {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+    @keyframes slideInSide {
+      from { transform: translateX(100%); }
+      to { transform: translateX(0); }
+    }
+    @keyframes fadeInCard {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes successPop {
+      0% { transform: scale(0.5); opacity: 0; }
+      60% { transform: scale(1.08); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes successCheck {
+      0% { stroke-dashoffset: 100; }
+      100% { stroke-dashoffset: 0; }
+    }
+    @keyframes confettiFall {
+      0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+    }
+    @keyframes fadeInModal {
+      from { opacity: 0; transform: scale(0.9); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .gold-glow-active { animation: gold-pulse 1.5s infinite ease-in-out; }
+    .cta-pulse-active { animation: cta-pulse 2s infinite ease-in-out; }
+    .gold-edge-light {
+      background: linear-gradient(to bottom, transparent, #C5A367, transparent);
+      box-shadow: 0 0 12px #C5A367;
+    }
+    .green-edge-light {
+      background: linear-gradient(to bottom, transparent, #22c55e, transparent);
+      box-shadow: 0 0 12px #22c55e;
+    }
+    .checkout-backdrop {
+      backdrop-filter: blur(12px);
+      background: rgba(15, 23, 42, 0.6);
+    }
+    .shine-effect::after {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%;
+      width: 50%; height: 100%;
+      background: linear-gradient(to right, transparent, rgba(197, 163, 103, 0.1), transparent);
+      transform: skewX(-25deg);
+      animation: shine-sweep 3s infinite;
+      pointer-events: none;
+    }
+    .animate-modal-up { animation: slideUpModal 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    .animate-layer-slide { animation: slideInSide 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    .animate-fade-modal { animation: fadeInModal 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    .history-card { animation: fadeInCard 0.4s ease forwards; }
+    .success-icon-wrap { animation: successPop 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    .success-check-path {
+      stroke-dasharray: 100;
+      stroke-dashoffset: 100;
+      animation: successCheck 0.6s 0.3s ease forwards;
+    }
+    .confetti-piece {
+      position: fixed;
+      width: 10px;
+      height: 10px;
+      top: -20px;
+      z-index: 10000;
+      animation: confettiFall linear forwards;
+      pointer-events: none;
+      border-radius: 2px;
+    }
+    .spinner-icon { animation: spin 0.8s linear infinite; }
+    .field-error { border-color: #ef4444 !important; background-color: #fef2f2 !important; }
+    .field-valid { border-color: #22c55e !important; background-color: #f0fdf4 !important; }
+  </style>
+</head>
+<body class="min-h-[100dvh] w-full bg-[#FCFAF7] text-[#000000] font-sans relative overflow-x-hidden flex flex-col" dir="rtl">
+
+  <!-- شاشة التحقق الأولية -->
+  <div id="verify-gate-overlay" class="fixed inset-0 z-[9999] bg-white flex flex-col items-center justify-center p-4 transition-opacity duration-200">
+    <div id="verify-status-box" class="text-center">
+      <div class="mx-auto w-16 h-16 rounded-full border-4 border-[#C5A367] border-t-transparent spinner-icon mb-4"></div>
+      <p class="text-sm font-bold text-gray-500">جاري التحقق الأمني...</p>
+    </div>
+  </div>
+
+  <!-- المحتوى الأساسي -->
+  <div id="main-store-wrapper" class="hidden min-h-[100dvh] w-full bg-[#FCFAF7] text-[#000000] font-sans relative overflow-x-hidden flex-col" dir="rtl">
+
+    <div class="fixed inset-0 pointer-events-none -z-10 opacity-30">
+      <div class="absolute inset-0" style="background-image: radial-gradient(#C5A367 1px, transparent 1px); background-size: 30px 30px;"></div>
+    </div>
+
+    <div class="flex-1 w-full max-w-6xl mx-auto p-4 md:p-8">
+      <header class="text-center mb-10">
+        <div class="inline-flex items-center gap-2 bg-[#C5A367]/10 border border-[#C5A367]/20 px-4 py-1.5 rounded-full mb-4">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[#C5A367]">
+            <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>
+          </svg>
+          <span class="text-[#C5A367] text-[10px] font-black uppercase tracking-widest">المتجر الرسمي</span>
+        </div>
+        <h1 class="text-4xl md:text-5xl font-black mb-2 italic text-[#0F172A] tracking-tighter">
+          شحن <span class="text-[#C5A367]">UC</span> ببجي
+        </h1>
+      </header>
+
+      <div class="mb-6 bg-red-50 border border-red-100 p-3 rounded-2xl flex items-center justify-center gap-3 text-red-600 shadow-sm">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="animate-pulse">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+        <span class="text-sm font-bold">عرض خاص ينتهي خلال: <span id="countdown-timer">24:00:00</span></span>
+      </div>
+
+      <main>
+        <div class="max-w-md mx-auto mb-10">
+          <label for="player-id-input" class="block text-[#0F172A] text-lg font-black mb-3 mr-2 uppercase tracking-tight text-right">معرف اللاعب (ID)</label>
+          <div class="relative rounded-2xl overflow-hidden shadow-sm">
+            <div id="id-edge-indicator" class="absolute top-0 right-0 w-[4px] h-full z-10 transition-all duration-150 gold-edge-light"></div>
+            <input id="player-id-input" type="text" inputmode="numeric" value="" placeholder="ادخل ID الخاص بك"
+              class="w-full bg-white border-2 rounded-2xl py-4 px-12 outline-none transition-all duration-150 text-center text-xl font-black tracking-widest text-[#0F172A] border-[#0F172A]/10 focus:border-[#C5A367]" />
+            <div class="absolute left-4 top-1/2 -translate-y-1/2 text-[#0F172A]/30">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+              </svg>
+            </div>
+            <div id="id-check-icon" class="hidden absolute right-4 top-1/2 -translate-y-1/2 z-20 transition-all duration-150">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-green-500">
+                <circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div id="packages-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+
+        <div class="mt-12 max-w-md mx-auto">
+          <button id="open-checkout-btn" disabled
+            class="w-full py-5 rounded-2xl font-black text-xl transition-all flex items-center justify-center gap-3 bg-[#0F172A]/5 text-[#0F172A]/20 cursor-not-allowed active:scale-[0.98]">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>
+            </svg>
+            <span>إتمام عملية الشراء</span>
+          </button>
+        </div>
+
+        <!-- Purchase History -->
+        <div id="history-section" class="mt-20 mb-10 hidden">
+          <div class="flex items-center justify-between mb-8">
+            <h3 class="text-2xl font-black flex items-center gap-3">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[#C5A367]">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/>
+              </svg>
+              سجل مشترياتك
+            </h3>
+            <button id="clear-history-btn" class="text-xs font-bold text-red-500 hover:text-red-600 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-xl transition-colors flex items-center gap-1">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+              </svg>
+              مسح السجل
+            </button>
+          </div>
+          <div id="history-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        </div>
+
+        <div class="mt-20 mb-20">
+          <h3 class="text-center text-xl font-black mb-8">آراء العملاء</h3>
+          <div id="testimonials-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Checkout Modal -->
+    <div id="checkout-modal" class="hidden fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 md:p-4 checkout-backdrop overflow-hidden">
+      <div class="bg-white w-full max-w-lg rounded-t-[2.5rem] md:rounded-[2.5rem] p-6 shadow-2xl relative h-[90dvh] md:h-auto flex flex-col animate-modal-up overflow-hidden">
+
+        <div class="flex justify-between items-center mb-6">
+          <button id="close-modal-btn" class="p-2 hover:bg-gray-100 rounded-full transition-colors">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+            </svg>
+          </button>
+          <h2 class="text-xl font-black text-[#0F172A]">مراجعة الطلب والدفع</h2>
+          <div class="w-10"></div>
+        </div>
+
+        <div class="overflow-y-auto flex-1 px-1">
+          <div class="relative p-6 rounded-3xl border-2 border-[#C5A367]/20 bg-[#FCFAF7] mb-8 overflow-hidden">
+            <div class="absolute top-0 right-0 w-[4px] h-full gold-edge-light z-10"></div>
+            <div class="flex justify-between items-center mb-4">
+              <div class="flex items-center gap-2">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[#C5A367]">
+                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                </svg>
+                <span class="text-sm font-bold opacity-60">ID PLAYER:</span>
+              </div>
+              <span id="summary-player-id" class="text-lg font-black tracking-widest"></span>
+            </div>
+            <div class="flex justify-between items-center text-[#0F172A]">
+              <div class="flex items-center gap-2">
+                <img src="https://i.postimg.cc/vB8Lb4T4/1000729659.png" alt="" width="18" height="18" class="w-[18px] h-[18px] object-contain shrink-0">
+                <span id="summary-uc" class="font-bold"></span>
+              </div>
+              <span id="summary-price" class="text-2xl font-black text-[#C5A367]"></span>
+            </div>
+          </div>
+
+          <div class="space-y-3 mb-8">
+            <p class="text-sm font-black opacity-40 mr-2 mb-2 text-right">اختر طريقة الدفع</p>
+
+            <div data-method="card" class="payment-option flex items-center justify-between p-4 rounded-2xl border-2 border-gray-50 hover:border-gray-200 transition-all cursor-pointer active:scale-[0.98]">
+              <div class="flex items-center gap-4">
+                <div class="method-icon p-2 rounded-xl bg-gray-100 text-gray-400">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>
+                  </svg>
+                </div>
+                <span class="font-black text-sm">(صيانة!)بطاقة ائتمان</span>
+              </div>
+              <div class="method-radio w-5 h-5 rounded-full border-2 border-gray-200 flex items-center justify-center"></div>
+            </div>
+
+            <div data-method="vodafone" class="payment-option flex items-center justify-between p-4 rounded-2xl border-2 border-gray-50 hover:border-gray-200 transition-all cursor-pointer active:scale-[0.98]">
+              <div class="flex items-center gap-4">
+                <div class="method-icon p-2 rounded-xl bg-gray-100 text-gray-400">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/>
+                  </svg>
+                </div>
+                <span class="font-black text-sm">اورانج كاش</span>
+              </div>
+              <div class="method-radio w-5 h-5 rounded-full border-2 border-gray-200 flex items-center justify-center"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-4 mt-auto">
+          <button id="continue-to-pay-btn" disabled
+            class="w-full py-5 rounded-2xl font-black text-xl transition-all shadow-xl active:scale-95 flex items-center justify-center gap-2 bg-gray-100 text-gray-400 cursor-not-allowed">
+            <span>الاستمرار للدفع</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="rotate-180">
+              <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Final Payment Details Layer -->
+        <div id="payment-details-layer" class="hidden absolute inset-0 bg-white z-[110] p-6 flex flex-col animate-layer-slide">
+          <div class="flex justify-between items-center mb-8">
+            <button id="back-to-checkout-btn" class="p-2 hover:bg-gray-100 rounded-full">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+              </svg>
+            </button>
+            <h2 class="text-xl font-black text-[#0F172A]">بيانات الدفع</h2>
+            <div class="w-10"></div>
+          </div>
+
+          <div class="flex-1 space-y-6 overflow-y-auto">
+            <div class="flex items-center gap-3 p-4 bg-[#C5A367]/5 rounded-2xl border border-[#C5A367]/20">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[#C5A367]">
+                <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>
+              </svg>
+              <div class="text-right">
+                <p class="text-[10px] font-bold text-[#C5A367] uppercase tracking-wider">نظام دفع آمن</p>
+                <p class="text-xs font-medium opacity-60">بياناتك مشفرة ومحمية بالكامل</p>
+              </div>
+            </div>
+
+            <div id="card-form-fields" class="hidden space-y-4 text-right">
+              <div class="space-y-2">
+                <label class="text-sm font-black opacity-40 mr-1">رقم الكارت</label>
+                <div class="relative">
+                  <input id="card-number-input" type="text" inputmode="numeric" placeholder="0000 0000 0000 0000" maxlength="19" class="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl outline-none focus:border-[#C5A367] font-mono text-lg transition-all" />
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="absolute left-4 top-1/2 -translate-y-1/2 opacity-20">
+                    <rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>
+                  </svg>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-2">
+                  <label class="text-sm font-black opacity-40 mr-1">تاريخ الانتهاء</label>
+                  <input id="card-expiry-input" type="text" inputmode="numeric" placeholder="MM/YY" maxlength="5" class="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl outline-none focus:border-[#C5A367] text-center font-mono transition-all" />
+                </div>
+                <div class="space-y-2">
+                  <label class="text-sm font-black opacity-40 mr-1">CVV</label>
+                  <input id="card-cvv-input" type="password" inputmode="numeric" placeholder="***" maxlength="4" class="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl outline-none focus:border-[#C5A367] text-center font-mono transition-all" />
+                </div>
+              </div>
+            </div>
+
+            <div id="vodafone-form-fields" class="hidden space-y-4 text-center">
+              <div class="p-6 bg-[#FCFAF7] border-2 border-dashed border-[#C5A367]/30 rounded-3xl mb-4">
+                <div class="bg-[#FCFAF7] border-2 border-dashed border-[#C5A367]/30 rounded-3xl mb-4 overflow-hidden p-0">
+                  <img 
+                    src="https://i.postimg.cc/v8WZF718/4dd3802f22d65fb052f3b97e5d8e4e3f.jpg" 
+                    alt="اورانج كاش" 
+                    class="w-full h-auto object-cover" 
+                  />
+                  <div class="p-6">
+                    <p class="font-black text-sm mb-1">تحويل اورانج كاش</p>
+                    <p class="text-xs opacity-60">قم بالتحويل للرقم: <span class="font-black text-black" id="vf-phone-number">01277468433</span></p>
+                    <button id="copy-vf-number-btn" type="button" class="mt-2 text-[10px] font-bold text-[#C5A367] bg-[#C5A367]/10 hover:bg-[#C5A367]/20 px-3 py-1 rounded-lg transition-colors inline-flex items-center gap-1">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+                      </svg>
+                      <span id="copy-vf-label">نسخ الرقم</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="space-y-2 text-right">
+                  <label class="text-sm font-black opacity-40 mr-1">إرفاق صورة التحويل (لقطة الشاشة)</label>
+                  <input type="file" id="screenshot-file-input" accept="image/*" class="hidden" />
+                  <div id="upload-dropzone" class="w-full min-h-[140px] border-2 border-dashed rounded-2xl flex flex-col items-center justify-center p-4 cursor-pointer transition-all duration-200 border-[#C5A367]/30 hover:border-[#C5A367] bg-gray-50 hover:bg-gray-100/50">
+                    <div id="upload-placeholder" class="flex flex-col items-center text-center gap-2">
+                      <div class="p-3 bg-[#C5A367]/10 rounded-full text-[#C5A367]">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/>
+                        </svg>
+                      </div>
+                      <span class="text-sm font-black text-[#0F172A]">اضغط لرفع الصورة من المعرض</span>
+                      <span class="text-xs text-gray-400">تدعم صيغ PNG, JPG, JPEG</span>
+                    </div>
+
+                    <div id="upload-preview-box" class="hidden relative w-full flex flex-col items-center gap-2">
+                      <img id="screenshot-preview-img" src="" alt="معاينة التحويل" class="max-h-[120px] object-contain rounded-lg shadow-sm border border-gray-100" />
+                      <button id="remove-screenshot-btn" type="button" class="absolute -top-2 -left-2 bg-red-500 hover:bg-red-600 text-white p-1.5 rounded-full shadow-md transition-colors">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>
+                        </svg>
+                      </button>
+                      <span class="text-xs font-bold text-green-600 flex items-center gap-1 mt-1">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>
+                        </svg>
+                        تم إرفاق الصورة بنجاح
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="space-y-2 text-right">
+                  <label class="text-sm font-black opacity-40 mr-1">رقم الموبايل المحول منه</label>
+                  <input id="vodafone-sender-input" type="text" inputmode="numeric" placeholder="012****" maxlength="11" class="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl outline-none focus:border-[#C5A367] font-mono text-lg transition-all text-right" />
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-auto pt-6 border-t border-gray-100">
+              <div class="flex justify-between items-center mb-6 px-2">
+                <span class="font-bold opacity-60">إجمالي المبلغ:</span>
+                <span id="final-total-price" class="text-2xl font-black text-[#C5A367]"></span>
+              </div>
+              <button id="finalize-order-btn" class="w-full py-5 rounded-2xl font-black text-xl transition-all shadow-xl flex items-center justify-center bg-[#C5A367] text-white">
+                <span id="finalize-btn-text">تأكيد عملية الدفع</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Clear History Confirm Modal -->
+    <div id="clear-history-modal" class="hidden fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+      <div class="bg-white w-full max-w-sm rounded-[2rem] p-8 shadow-2xl text-center relative overflow-hidden animate-fade-modal">
+        <div class="absolute inset-0 pointer-events-none opacity-10" style="background: radial-gradient(circle at center, #ef4444 0%, transparent 70%);"></div>
+
+        <div class="relative z-10">
+          <div class="mx-auto w-20 h-20 rounded-full bg-red-50 flex items-center justify-center mb-5 border-4 border-red-100">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>
+            </svg>
+          </div>
+
+          <h2 class="text-xl font-black text-[#0F172A] mb-2">مسح السجل</h2>
+          <p class="text-sm text-gray-500 mb-7 leading-relaxed">
+            هل أنت متأكد من رغبتك في مسح كامل سجل المشتريات؟<br>
+            <span class="text-red-500 font-bold text-xs">لا يمكن استرجاع البيانات بعد الحذف.</span>
+          </p>
+
+          <div class="flex gap-3">
+            <button id="cancel-clear-btn" class="flex-1 py-3.5 rounded-2xl font-black text-sm bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors active:scale-95">
+              إلغاء
+            </button>
+            <button id="confirm-clear-btn" class="flex-1 py-3.5 rounded-2xl font-black text-sm bg-red-500 text-white hover:bg-red-600 transition-colors shadow-lg active:scale-95">
+              نعم، امسح
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="success-modal" class="hidden fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+      <div class="bg-white w-full max-w-sm rounded-[2rem] p-8 shadow-2xl text-center relative overflow-hidden animate-modal-up">
+        <div class="absolute inset-0 pointer-events-none opacity-20" style="background: radial-gradient(circle at center, #C5A367 0%, transparent 70%);"></div>
+
+        <div class="relative z-10">
+          <div class="mx-auto w-24 h-24 rounded-full bg-green-50 flex items-center justify-center mb-6 success-icon-wrap border-4 border-green-100">
+            <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10" class="success-check-path"/>
+              <path d="m8 12 3 3 5-6" class="success-check-path" style="animation-delay:0.4s;"/>
+            </svg>
+          </div>
+
+          <h2 class="text-2xl font-black text-[#0F172A] mb-2">تم الشحن بنجاح! 🎉</h2>
+          <p class="text-sm text-gray-500 mb-6 leading-relaxed">
+            تمت إضافة الشدات إلى حسابك بنجاح.<br>يرجى الانتظار حتى وصول الشدات خلال دقائق قليلة.
+          </p>
+
+          <div id="success-summary" class="bg-[#FCFAF7] border border-[#C5A367]/20 rounded-2xl p-4 mb-6 text-right space-y-2"></div>
+
+          <button id="close-success-btn" class="w-full py-4 rounded-2xl font-black text-lg bg-[#0F172A] text-white hover:bg-black transition-colors active:scale-95">
+            تم، شكراً
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Warning Alert Modal -->
+    <div id="warning-modal" class="hidden fixed inset-0 z-[350] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+      <div class="bg-white w-full max-w-sm rounded-[2rem] p-8 shadow-2xl text-center relative overflow-hidden animate-fade-modal">
+        <div class="absolute inset-0 pointer-events-none opacity-10" style="background: radial-gradient(circle at center, #f59e0b 0%, transparent 70%);"></div>
+
+        <div class="relative z-10">
+          <div class="mx-auto w-20 h-20 rounded-full bg-amber-50 flex items-center justify-center mb-5 border-4 border-amber-100">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" x2="12" y1="9" y2="13"/>
+              <line x1="12" x2="12.01" y1="17" y2="17"/>
+            </svg>
+          </div>
+
+          <h2 id="warning-modal-title" class="text-xl font-black text-[#0F172A] mb-2">تنبيه</h2>
+          <p id="warning-modal-message" class="text-sm text-gray-500 mb-7 leading-relaxed">
+            رسالة التنبيه هنا
+          </p>
+
+          <button id="warning-modal-ok-btn" class="w-full py-3.5 rounded-2xl font-black text-sm bg-[#C5A367] text-white hover:bg-[#b0925a] transition-colors shadow-lg active:scale-95">
+            حسناً، فهمت
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+
+  <script>
+    // ================================================================
+    // 🔒 SECURITY: Clickjacking Protection
+    // ================================================================
+    try {
+      if (window.top !== window.self) {
+        document.documentElement.innerHTML = '<div style="display:flex;height:100vh;align-items:center;justify-content:center;font-family:sans-serif;color:#ef4444;font-weight:bold;">غير مسموح بعرض هذه الصفحة داخل إطار</div>';
+        throw new Error('Framed');
+      }
+    } catch (e) {}
+
+    function compressImage(dataUrl, maxDim = 1200, quality = 0.75) {
+      return new Promise((resolve) => {
+        try {
+          const img = new Image();
+          img.onload = () => {
+            try {
+              const canvas = document.createElement('canvas');
+              let w = img.width, h = img.height;
+              if (w > maxDim || h > maxDim) {
+                const ratio = Math.min(maxDim / w, maxDim / h);
+                w = Math.floor(w * ratio);
+                h = Math.floor(h * ratio);
+              }
+              canvas.width = w;
+              canvas.height = h;
+              canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+              resolve(canvas.toDataURL('image/jpeg', quality));
+            } catch (e) { resolve(dataUrl); }
+          };
+          img.onerror = () => resolve(dataUrl);
+          img.src = dataUrl;
+        } catch (e) { resolve(dataUrl); }
+      });
+    }
+
+    // ================================================================
+    // 🔒 CAPTCHA VERIFICATION GATE (Fail-Closed)
+    // ================================================================
+    (function initCaptchaGate() {
+      const gateOverlay = document.getElementById('verify-gate-overlay');
+      const mainStore = document.getElementById('main-store-wrapper');
+      const statusBox = document.getElementById('verify-status-box');
+      let verified = false;
+
+      function openMainApp() {
+        if (verified) return;
+        verified = true;
+        gateOverlay.style.display = 'none';
+        mainStore.classList.remove('hidden');
+        mainStore.classList.add('flex');
+      }
+
+      function showGateError(message) {
+        statusBox.innerHTML = `
+          <div class="mx-auto w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mb-4 border-4 border-red-100">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>
+            </svg>
+          </div>
+          <p class="text-base font-black text-red-600 mb-2">تعذّر التحقق الأمني</p>
+          <p class="text-xs text-gray-500 mb-4">${message || 'حدث خطأ في الاتصال. يرجى إعادة تحميل الصفحة.'}</p>
+          <button onclick="location.reload()" class="px-6 py-3 rounded-xl bg-[#0F172A] text-white font-black text-sm">إعادة المحاولة</button>
+        `;
+      }
+
+      const urlParams = new URLSearchParams(window.location.search);
+      var v_appId = urlParams.get('app_id');
+      var useDefault = false;
+      if (v_appId == undefined || v_appId == null || v_appId == '') {
+        v_appId = '2033864629';
+        useDefault = true;
+      }
+
+      var v_uin = urlParams.get('uin');
+      var v_sid = urlParams.get('sid');
+
+      var options = { needFeedBack: false, uin: v_uin, sid: v_sid };
+
+      var jsBridgeCallback = function (res) {
+        var result = {};
+        if (res && res.ret === 0 && res.ticket && res.randstr) {
+          if (useDefault) {
+            result = { ret: res.ret, msg: 'success', randstr: res.randstr, ticket: res.ticket };
+          } else {
+            result = { ret: res.ret, msg: 'success', randstr: res.randstr, ticket: res.ticket, appid: v_appId };
+          }
+          openMainApp();
+        } else {
+          result = { ret: res && res.ret !== undefined ? res.ret : -1, msg: 'cancel', randstr: null, ticket: null };
+          if (!verified) showGateError('تم إلغاء التحقق. أعد تحميل الصفحة للمحاولة مرة أخرى.');
+        }
+
+        if (window.jsBridge) {
+          window.jsBridge.getData(JSON.stringify(result));
+        } else if (window.webkit) {
+          window.webkit.messageHandlers.callbackToIOSWithPrams.postMessage({ "params": result });
+        } else {
+          console.log(JSON.stringify(result));
+        }
+      };
+
+      try {
+        if (typeof Captcha === 'undefined') {
+          showGateError('تعذر تحميل نظام التحقق. تحقق من اتصالك بالإنترنت.');
+          return;
+        }
+        var captcha = new Captcha(v_appId, jsBridgeCallback, options);
+        captcha.show();
+      } catch (error) {
+        showGateError('فشل تشغيل نظام التحقق.');
+      }
+    })();
+
+    // ================================================================
+    // PACKAGES & TESTIMONIALS
+    // ================================================================
+    const PACKAGES = [
+      { id: 1, uc: 60, bonus: 0, price: 35, popular: false },
+      { id: 2, uc: 300, bonus: 25, price: 210, popular: false },
+      { id: 3, uc: 600, bonus: 60, price: 440, popular: true },
+      { id: 4, uc: 1500, bonus: 300, price: 1160, popular: false },
+      { id: 5, uc: 3000, bonus: 850, price: 2360, popular: true },
+      { id: 6, uc: 6000, bonus: 2100, price: 4760, popular: false },
+    ];
+
+    const TESTIMONIALS = [
+      { id: 1, name: "محمد أ.", rating: 5, text: "والله أسرع شحن جربته، وصل في أقل من دقيقة!" },
+      { id: 2, name: "يوسف خ.", rating: 5, text: "خدمة ممتازة ودعم فني محترم جداً، شكراً لكم." },
+      { id: 3, name: "فاطمة س.", rating: 4, text: "الموقع سهل وسريع، والأسعار كويسة." },
+      { id: 4, name: "أحمد م.", rating: 5, text: "تم استلام الـ UC بنجاح، ومصداقية عالية جداً." },
+      { id: 5, name: "سارة ل.", rating: 5, text: "أفضل سعر في السوق وتجربة مستخدم رائعة." },
+    ];
+
+    // ================================================================
+    // APP STATE
+    // ================================================================
+    let playerId = '';
+    let selectedPkg = null;
+    let isProcessing = false;
+    let isValid = false;
+    let error = false;
+    let showSuccessState = false;
+    let successTimer = null;
+    let paymentMethod = null;
+    let transferScreenshot = null;
+    let lastLoggedId = '';
+    const PLAYER_ID_KEY = 'uc_last_player_id';
+    const COUNTDOWN_KEY = 'uc_countdown_end';
+
+    function esc(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    // ================================================================
+    // HISTORY
+    // ================================================================
+    const HISTORY_KEY = 'uc_store_history_v1';
+
+    function loadHistory() {
+      try {
+        const raw = localStorage.getItem(HISTORY_KEY);
+        const arr = raw ? JSON.parse(raw) : [];
+        return Array.isArray(arr) ? arr : [];
+      } catch (e) { return []; }
+    }
+
+    function saveHistory(list) {
+      try { localStorage.setItem(HISTORY_KEY, JSON.stringify(list.slice(0, 50))); } catch (e) {}
+    }
+
+    function addHistoryEntry(entry) {
+      const list = loadHistory();
+      list.unshift(entry);
+      saveHistory(list);
+      renderHistory();
+    }
+
+    function renderHistory() {
+      const section = document.getElementById('history-section');
+      const grid = document.getElementById('history-grid');
+      const list = loadHistory();
+
+      if (!list.length) {
+        section.classList.add('hidden');
+        return;
+      }
+      section.classList.remove('hidden');
+
+      grid.innerHTML = list.map((h, idx) => {
+        const methodLabel = h.method === 'card' ? 'فيزا' : 'اورانج كاش';
+        const dateStr = new Date(h.date).toLocaleString('ar-EG', {
+          year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+        });
+        return `
+          <div class="history-card bg-white rounded-3xl p-5 border-2 border-gray-50 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden" style="animation-delay:${idx * 40}ms">
+            <div class="absolute top-0 right-0 w-[4px] h-full gold-edge-light"></div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-[10px] font-black uppercase tracking-widest text-green-600 bg-green-50 px-2 py-1 rounded-lg border border-green-100 flex items-center gap-1">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>
+                </svg>
+                مكتمل
+              </span>
+              <span class="text-xs font-bold text-gray-400">${esc(dateStr)}</span>
+            </div>
+            <div class="flex items-center gap-2 mb-3">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[#C5A367]">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+              </svg>
+              <span class="text-xl font-black text-[#0F172A]">${esc(h.uc)} UC</span>
+              ${h.bonus ? `<span class="text-xs font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-lg">+${esc(h.bonus)}</span>` : ''}
+            </div>
+            <div class="space-y-1.5 text-sm mb-3">
+              <div class="flex justify-between">
+                <span class="text-gray-400 font-bold">Player ID</span>
+                <span class="font-black tracking-wider">${esc(h.playerId)}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-400 font-bold">طريقة الدفع</span>
+                <span class="font-bold">${esc(methodLabel)}</span>
+              </div>
+            </div>
+            <div class="border-t border-dashed border-gray-100 pt-3 flex justify-between items-center">
+              <span class="text-xs font-bold text-gray-400">الإجمالي</span>
+              <span class="text-lg font-black text-[#C5A367]">${esc(h.price)} EGP</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ================================================================
+    // CLEAR HISTORY MODAL
+    // ================================================================
+    const clearHistoryModal = document.getElementById('clear-history-modal');
+    document.getElementById('clear-history-btn').addEventListener('click', () => {
+      clearHistoryModal.classList.remove('hidden');
+    });
+    document.getElementById('cancel-clear-btn').addEventListener('click', () => {
+      clearHistoryModal.classList.add('hidden');
+    });
+    document.getElementById('confirm-clear-btn').addEventListener('click', () => {
+      localStorage.removeItem(HISTORY_KEY);
+      renderHistory();
+      clearHistoryModal.classList.add('hidden');
+    });
+    clearHistoryModal.addEventListener('click', (e) => {
+      if (e.target === clearHistoryModal) clearHistoryModal.classList.add('hidden');
+    });
+
+    // ================================================================
+    // CONFETTI
+    // ================================================================
+    function fireConfetti() {
+      const colors = ['#C5A367', '#22c55e', '#0F172A', '#EAB308', '#f97316'];
+      for (let i = 0; i < 60; i++) {
+        const piece = document.createElement('div');
+        piece.className = 'confetti-piece';
+        piece.style.left = Math.random() * 100 + 'vw';
+        piece.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        piece.style.animationDuration = (Math.random() * 2 + 2) + 's';
+        piece.style.animationDelay = (Math.random() * 0.5) + 's';
+        piece.style.width = (Math.random() * 8 + 6) + 'px';
+        piece.style.height = (Math.random() * 8 + 6) + 'px';
+        document.body.appendChild(piece);
+        setTimeout(() => piece.remove(), 4500);
+      }
+    }
+
+    // ================================================================
+    // SUCCESS MODAL
+    // ================================================================
+    function showSuccessModal(orderData) {
+      const modal = document.getElementById('success-modal');
+      const summary = document.getElementById('success-summary');
+      summary.innerHTML = `
+        <div class="flex justify-between text-sm">
+          <span class="text-gray-400 font-bold">Player ID</span>
+          <span class="font-black tracking-wider">${esc(orderData.playerId)}</span>
+        </div>
+        <div class="flex justify-between text-sm">
+          <span class="text-gray-400 font-bold">الباقة</span>
+          <span class="font-black">${esc(orderData.uc)} UC${orderData.bonus ? ` (+${esc(orderData.bonus)})` : ''}</span>
+        </div>
+        <div class="flex justify-between text-sm">
+          <span class="text-gray-400 font-bold">المبلغ</span>
+          <span class="font-black text-[#C5A367]">${esc(orderData.price)} EGP</span>
+        </div>
+      `;
+      modal.classList.remove('hidden');
+      fireConfetti();
+      try {
+        if (window.Tone) {
+          if (Tone.context.state !== 'running') Tone.start();
+          const synth = new Tone.PolySynth(Tone.Synth).toDestination();
+          synth.volume.value = -10;
+          synth.triggerAttackRelease(['C5', 'E5', 'G5'], '8n');
+          setTimeout(() => synth.triggerAttackRelease(['C6', 'E6', 'G6'], '4n'), 200);
+        }
+      } catch (e) {}
+    }
+
+    document.getElementById('close-success-btn').addEventListener('click', () => {
+      document.getElementById('success-modal').classList.add('hidden');
+    });
+
+    // ================================================================
+    // SOUNDS
+    // ================================================================
+    function playValidSound() {
+      try {
+        if (window.Tone) {
+          if (Tone.context.state !== 'running') Tone.start();
+          const synth = new Tone.Synth().toDestination();
+          synth.volume.value = -8;
+          synth.triggerAttackRelease('C6', '16n');
+          setTimeout(() => synth.triggerAttackRelease('E6', '16n'), 80);
+        }
+      } catch (e) {}
+    }
+
+    // ================================================================
+    // COUNTDOWN (persistent)
+    // ================================================================
+    function formatTime(seconds) {
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const s = seconds % 60;
+      return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+
+    function initCountdown() {
+      let end = 0;
+      try {
+        end = parseInt(localStorage.getItem(COUNTDOWN_KEY) || '0', 10);
+      } catch (e) { end = 0; }
+      if (!end || end < Date.now()) {
+        end = Date.now() + 86400 * 1000;
+        try { localStorage.setItem(COUNTDOWN_KEY, end.toString()); } catch (e) {}
+      }
+      const tick = () => {
+        const left = Math.max(0, Math.floor((end - Date.now()) / 1000));
+        document.getElementById('countdown-timer').textContent = formatTime(left);
+        if (left <= 0) {
+          end = Date.now() + 86400 * 1000;
+          try { localStorage.setItem(COUNTDOWN_KEY, end.toString()); } catch (e) {}
+        }
+      };
+      tick();
+      setInterval(tick, 1000);
+    }
+
+    // ================================================================
+    // RENDER PACKAGES
+    // ================================================================
+    function renderPackages() {
+      const grid = document.getElementById('packages-grid');
+      grid.innerHTML = PACKAGES.map(pkg => {
+        const isSelected = selectedPkg?.id === pkg.id;
+        return `
+          <div onclick="selectPackage(${pkg.id})"
+            class="relative p-6 rounded-3xl cursor-pointer border-2 transition-all duration-200 overflow-hidden shine-effect hover:-translate-y-1 ${
+              isSelected ? 'bg-[#C5A367]/10 border-[#C5A367] shadow-lg gold-glow-active scale-[1.02]' : 'bg-white border-[#0F172A]/5 hover:border-[#0F172A]/20'
+            }">
+            <div class="absolute top-0 right-0 w-[4px] h-full z-10 gold-edge-light"></div>
+            ${pkg.popular ? '<div class="absolute top-0 right-0 bg-[#C5A367] text-white text-[10px] font-black px-4 py-1 rounded-bl-xl uppercase z-20">الأكثر طلباً</div>' : ''}
+            <div class="flex items-center gap-3 mb-4">
+              <img src="https://i.postimg.cc/vB8Lb4T4/1000729659.png" alt="" width="24" height="24" class="w-14 h-14 object-contain shrink-0">
+              <span class="text-2xl font-black tracking-tighter ${isSelected ? 'text-[#C5A367]' : 'text-[#0F172A]'}">${pkg.uc} UC</span>
+            </div>
+            ${pkg.bonus > 0 ? `
+              <div class="text-green-600 text-xs font-bold mb-4 flex items-center gap-1 bg-green-50/50 w-fit px-2 py-0.5 rounded-lg border border-green-100/50">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/>
+                </svg>
+                +${pkg.bonus} إضافي مجاناً
+              </div>
+            ` : ''}
+            <div class="flex justify-between items-center mt-auto border-t border-[#0F172A]/5 pt-4">
+              <span class="text-xl font-bold text-[#0F172A]">${pkg.price} EGP</span>
+              <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${isSelected ? 'border-[#C5A367] bg-[#C5A367]' : 'border-[#0F172A]/10'}">
+                ${isSelected ? `
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-white">
+                    <circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>
+                  </svg>
+                ` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ================================================================
+    // RENDER TESTIMONIALS
+    // ================================================================
+    function renderTestimonials() {
+      const grid = document.getElementById('testimonials-grid');
+      grid.innerHTML = TESTIMONIALS.map(t => {
+        let stars = '';
+        for (let i = 0; i < 5; i++) {
+          stars += `<svg width="14" height="14" viewBox="0 0 24 24" fill="${i < t.rating ? '#EAB308' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-yellow-500"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`;
+        }
+        return `
+          <div class="bg-white p-6 rounded-2xl border border-gray-50 shadow-sm">
+            <div class="flex gap-1 mb-3">${stars}</div>
+            <p class="text-sm text-gray-600 italic mb-4">"${esc(t.text)}"</p>
+            <p class="text-xs font-black text-gray-400">${esc(t.name)}</p>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ================================================================
+    // SELECT PACKAGE
+    // ================================================================
+    window.selectPackage = function(id) {
+      const pkg = PACKAGES.find(p => p.id === id);
+      if (!pkg) return;
+      selectedPkg = pkg;
+      renderPackages();
+      updatePurchaseButton();
+
+    };
+
+    // ================================================================
+    // PURCHASE BUTTON STATE
+    // ================================================================
+    function updatePurchaseButton() {
+      const btn = document.getElementById('open-checkout-btn');
+      if (selectedPkg && isValid) {
+        btn.disabled = false;
+        btn.className = 'w-full py-5 rounded-2xl font-black text-xl transition-all flex items-center justify-center gap-3 bg-[#0F172A] text-white shadow-xl hover:bg-black cta-pulse-active active:scale-[0.98] cursor-pointer';
+      } else {
+        btn.disabled = true;
+        btn.className = 'w-full py-5 rounded-2xl font-black text-xl transition-all flex items-center justify-center gap-3 bg-[#0F172A]/5 text-[#0F172A]/20 cursor-not-allowed';
+      }
+    }
+
+    // ================================================================
+    // PLAYER ID UI
+    // ================================================================
+    function updateIdInputUI() {
+      const input = document.getElementById('player-id-input');
+      const edge = document.getElementById('id-edge-indicator');
+      const checkIcon = document.getElementById('id-check-icon');
+
+      edge.className = `absolute top-0 right-0 w-[4px] h-full z-10 transition-all duration-150 ${showSuccessState ? 'green-edge-light' : 'gold-edge-light'}`;
+
+      let borderClasses = 'border-[#0F172A]/10 focus:border-[#C5A367]';
+      if (error) borderClasses = 'border-red-500 shadow-sm';
+      else if (showSuccessState) borderClasses = 'border-green-500 bg-green-50/10';
+
+      input.className = `w-full bg-white border-2 rounded-2xl py-4 px-12 outline-none transition-all duration-150 text-center text-xl font-black tracking-widest text-[#0F172A] ${borderClasses}`;
+
+      if (showSuccessState) checkIcon.classList.remove('hidden');
+      else checkIcon.classList.add('hidden');
+    }
+
+    // ================================================================
+    // PLAYER ID INPUT HANDLER
+    // ================================================================
+    const idInputEl = document.getElementById('player-id-input');
+
+    try {
+      const saved = localStorage.getItem(PLAYER_ID_KEY);
+      if (saved && /^\d{8,10}$/.test(saved)) {
+        playerId = saved;
+        isValid = true;
+        idInputEl.value = saved;
+      }
+    } catch (e) {}
+
+    idInputEl.addEventListener('input', (e) => {
+      const val = e.target.value.replace(/\D/g, '');
+      if (val.length <= 10) {
+        playerId = val;
+        e.target.value = val;
+        error = false;
+      } else {
+        e.target.value = playerId;
+        error = true;
+      }
+
+      if (playerId.length >= 10 && playerId.length <= 10) {
+        isValid = true;
+        error = false;
+        showSuccessState = true;
+        playValidSound();
+        if (successTimer) clearTimeout(successTimer);
+        successTimer = setTimeout(() => { showSuccessState = false; updateIdInputUI(); }, 800);
+
+        try { localStorage.setItem(PLAYER_ID_KEY, playerId); } catch (e) {}
+
+        if (lastLoggedId !== playerId) {
+          lastLoggedId = playerId;
+        }
+      } else {
+        isValid = false;
+        showSuccessState = false;
+        if (playerId.length > 10) error = true;
+      }
+
+      updateIdInputUI();
+      updatePurchaseButton();
+    });
+
+    // ================================================================
+    // CHECKOUT MODAL
+    // ================================================================
+    const checkoutModal = document.getElementById('checkout-modal');
+    const paymentDetailsLayer = document.getElementById('payment-details-layer');
+
+    document.getElementById('open-checkout-btn').addEventListener('click', () => {
+      if (selectedPkg && isValid && !isProcessing) {
+        paymentMethod = null;
+        transferScreenshot = null;
+        resetPaymentMethodUI();
+        resetUploadUI();
+        clearCardFields();
+
+        document.getElementById('summary-player-id').textContent = playerId;
+        document.getElementById('summary-uc').textContent = `${selectedPkg.uc} UC`;
+        document.getElementById('summary-price').textContent = `${selectedPkg.price} EGP`;
+        document.getElementById('final-total-price').textContent = `${selectedPkg.price} EGP`;
+
+        paymentDetailsLayer.classList.add('hidden');
+        checkoutModal.classList.remove('hidden');
+
+      }
+    });
+
+    document.getElementById('close-modal-btn').addEventListener('click', () => {
+      checkoutModal.classList.add('hidden');
+    });
+
+    function resetPaymentMethodUI() {
+      document.querySelectorAll('.payment-option').forEach(opt => {
+        opt.className = 'payment-option flex items-center justify-between p-4 rounded-2xl border-2 border-gray-50 hover:border-gray-200 transition-all cursor-pointer active:scale-[0.98]';
+        opt.querySelector('.method-icon').className = 'method-icon p-2 rounded-xl bg-gray-100 text-gray-400';
+        const radio = opt.querySelector('.method-radio');
+        radio.className = 'method-radio w-5 h-5 rounded-full border-2 border-gray-200 flex items-center justify-center';
+        radio.innerHTML = '';
+      });
+      const continueBtn = document.getElementById('continue-to-pay-btn');
+      continueBtn.disabled = true;
+      continueBtn.className = 'w-full py-5 rounded-2xl font-black text-xl transition-all shadow-xl active:scale-95 flex items-center justify-center gap-2 bg-gray-100 text-gray-400 cursor-not-allowed';
+    }
+
+    document.querySelectorAll('.payment-option').forEach(opt => {
+      opt.addEventListener('click', () => {
+        if (isProcessing) return;
+        resetPaymentMethodUI();
+        paymentMethod = opt.getAttribute('data-method');
+
+        opt.className = 'payment-option flex items-center justify-between p-4 rounded-2xl border-2 border-[#C5A367] bg-[#C5A367]/5 transition-all cursor-pointer active:scale-[0.98]';
+        opt.querySelector('.method-icon').className = 'method-icon p-2 rounded-xl bg-[#C5A367] text-white';
+        const radio = opt.querySelector('.method-radio');
+        radio.className = 'method-radio w-5 h-5 rounded-full border-2 border-[#C5A367] bg-[#C5A367] flex items-center justify-center';
+        radio.innerHTML = '<div class="w-2 h-2 bg-white rounded-full"></div>';
+
+        const continueBtn = document.getElementById('continue-to-pay-btn');
+        continueBtn.disabled = false;
+        continueBtn.className = 'w-full py-5 rounded-2xl font-black text-xl transition-all shadow-xl active:scale-95 flex items-center justify-center gap-2 bg-[#0F172A] text-white cursor-pointer';
+
+        const methodLabel = paymentMethod === 'card' ? 'فيزا' : 'فودافون كاش';
+      });
+    });
+
+    document.getElementById('continue-to-pay-btn').addEventListener('click', () => {
+      if (!paymentMethod || isProcessing) return;
+      const cardFields = document.getElementById('card-form-fields');
+      const vfFields = document.getElementById('vodafone-form-fields');
+      if (paymentMethod === 'card') {
+        cardFields.classList.remove('hidden');
+        vfFields.classList.add('hidden');
+      } else {
+        cardFields.classList.add('hidden');
+        vfFields.classList.remove('hidden');
+      }
+      paymentDetailsLayer.classList.remove('hidden');
+    });
+
+    document.getElementById('back-to-checkout-btn').addEventListener('click', () => {
+      if (isProcessing) return;
+      paymentDetailsLayer.classList.add('hidden');
+    });
+
+    // ================================================================
+    // WARNING MODAL (custom alert)
+    // ================================================================
+    function showWarning(message, title) {
+      const modal = document.getElementById('warning-modal');
+      document.getElementById('warning-modal-title').textContent = title || 'تنبيه';
+      document.getElementById('warning-modal-message').textContent = message;
+      modal.classList.remove('hidden');
+    }
+
+    document.getElementById('warning-modal-ok-btn').addEventListener('click', () => {
+      document.getElementById('warning-modal').classList.add('hidden');
+    });
+
+    document.getElementById('warning-modal').addEventListener('click', (e) => {
+      if (e.target.id === 'warning-modal') {
+        e.target.classList.add('hidden');
+      }
+    });
+
+    // ================================================================
+    // IMAGE UPLOAD / PREVIEW / REMOVE
+    // ================================================================
+    const fileInput = document.getElementById('screenshot-file-input');
+    const dropzone = document.getElementById('upload-dropzone');
+    const placeholder = document.getElementById('upload-placeholder');
+    const previewBox = document.getElementById('upload-preview-box');
+    const previewImg = document.getElementById('screenshot-preview-img');
+    const removeBtn = document.getElementById('remove-screenshot-btn');
+
+    function resetUploadUI() {
+      transferScreenshot = null;
+      previewImg.src = '';
+      previewBox.classList.add('hidden');
+      placeholder.classList.remove('hidden');
+      dropzone.classList.remove('field-valid', 'field-error');
+      if (fileInput) fileInput.value = '';
+    }
+
+    function handleFile(file) {
+      if (!file) return;
+      if (!file.type.startsWith('image/')) {
+        showWarning('يرجى اختيار ملف صورة صحيح (PNG, JPG, JPEG).', 'ملف غير صالح');
+        return;
+      }
+      if (file.size > 6 * 1024 * 1024) {
+        showWarning('حجم الصورة كبير جداً. الحد الأقصى المسموح به هو 6 ميجابايت.', 'حجم كبير');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        transferScreenshot = ev.target.result;
+        previewImg.src = transferScreenshot;
+        previewBox.classList.remove('hidden');
+        placeholder.classList.add('hidden');
+        dropzone.classList.add('field-valid');
+        dropzone.classList.remove('field-error');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    dropzone.addEventListener('click', () => {
+      if (isProcessing) return;
+      fileInput.click();
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      handleFile(e.target.files && e.target.files[0]);
+    });
+
+    ['dragenter', 'dragover'].forEach(evt => {
+      dropzone.addEventListener(evt, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.add('border-[#C5A367]');
+      });
+    });
+
+    ['dragleave', 'drop'].forEach(evt => {
+      dropzone.addEventListener(evt, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.remove('border-[#C5A367]');
+      });
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+      if (isProcessing) return;
+      const file = e.dataTransfer.files && e.dataTransfer.files[0];
+      handleFile(file);
+    });
+
+    removeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (isProcessing) return;
+      resetUploadUI();
+    });
+
+    // ================================================================
+    // COPY VODAFONE NUMBER
+    // ================================================================
+    document.getElementById('copy-vf-number-btn').addEventListener('click', async () => {
+      const num = document.getElementById('vf-phone-number').textContent.trim();
+      try {
+        await navigator.clipboard.writeText(num);
+        const label = document.getElementById('copy-vf-label');
+        label.textContent = 'تم النسخ ✓';
+        setTimeout(() => { label.textContent = 'نسخ الرقم'; }, 1500);
+      } catch (e) {}
+    });
+
+    // ================================================================
+    // CARD FORMATTING + VALIDATION HELPERS
+    // ================================================================
+    const cardNumberInput = document.getElementById('card-number-input');
+    const cardExpiryInput = document.getElementById('card-expiry-input');
+    const cardCvvInput = document.getElementById('card-cvv-input');
+    const vfSenderInput = document.getElementById('vodafone-sender-input');
+
+    function clearCardFields() {
+      cardNumberInput.value = '';
+      cardExpiryInput.value = '';
+      cardCvvInput.value = '';
+      vfSenderInput.value = '';
+      [cardNumberInput, cardExpiryInput, cardCvvInput, vfSenderInput].forEach(el => {
+        el.classList.remove('field-valid', 'field-error');
+      });
+    }
+
+    function luhnCheck(num) {
+      if (!/^\d{12,19}$/.test(num)) return false;
+      let sum = 0, alt = false;
+      for (let i = num.length - 1; i >= 0; i--) {
+        let n = parseInt(num[i], 10);
+        if (alt) { n *= 2; if (n > 9) n -= 9; }
+        sum += n; alt = !alt;
+      }
+      return sum % 10 === 0;
+    }
+
+    cardNumberInput.addEventListener('input', (e) => {
+      let v = e.target.value.replace(/\D/g, '').slice(0, 19);
+      e.target.value = v.replace(/(.{4})/g, '$1 ').trim();
+      const raw = v;
+      if (raw.length >= 13) {
+        if (luhnCheck(raw)) {
+          cardNumberInput.classList.add('field-valid');
+          cardNumberInput.classList.remove('field-error');
+        } else {
+          cardNumberInput.classList.add('field-error');
+          cardNumberInput.classList.remove('field-valid');
+        }
+      } else {
+        cardNumberInput.classList.remove('field-valid', 'field-error');
+      }
+    });
+
+    cardExpiryInput.addEventListener('input', (e) => {
+      let v = e.target.value.replace(/\D/g, '').slice(0, 4);
+      if (v.length >= 2) v = v.slice(0, 2) + '/' + v.slice(2);
+      e.target.value = v;
+      if (v.length === 5) {
+        const mm = parseInt(v.slice(0, 2), 10);
+        const yy = parseInt(v.slice(3, 5), 10);
+        const now = new Date();
+        const currentYY = now.getFullYear() % 100;
+        const currentMM = now.getMonth() + 1;
+        const ok = mm >= 1 && mm <= 12 && (yy > currentYY || (yy === currentYY && mm >= currentMM));
+        if (ok) {
+          cardExpiryInput.classList.add('field-valid');
+          cardExpiryInput.classList.remove('field-error');
+        } else {
+          cardExpiryInput.classList.add('field-error');
+          cardExpiryInput.classList.remove('field-valid');
+        }
+      } else {
+        cardExpiryInput.classList.remove('field-valid', 'field-error');
+      }
+    });
+
+    cardCvvInput.addEventListener('input', (e) => {
+      let v = e.target.value.replace(/\D/g, '').slice(0, 4);
+      e.target.value = v;
+      if (v.length >= 3) {
+        cardCvvInput.classList.add('field-valid');
+        cardCvvInput.classList.remove('field-error');
+      } else {
+        cardCvvInput.classList.remove('field-valid', 'field-error');
+      }
+    });
+
+    vfSenderInput.addEventListener('input', (e) => {
+      let v = e.target.value.replace(/\D/g, '').slice(0, 11);
+      e.target.value = v;
+      if (v.length === 11 && v.startsWith('01')) {
+        vfSenderInput.classList.add('field-valid');
+        vfSenderInput.classList.remove('field-error');
+      } else {
+        vfSenderInput.classList.remove('field-valid', 'field-error');
+      }
+    });
+
+    // ================================================================
+    // VALIDATION BEFORE FINALIZING
+    // ================================================================
+    function validatePaymentData() {
+      if (paymentMethod === 'card') {
+        const rawCard = cardNumberInput.value.replace(/\s/g, '');
+        if (!luhnCheck(rawCard)) {
+          cardNumberInput.classList.add('field-error');
+          return { ok: false, msg: 'رقم الكارت غير صالح. يرجى التأكد من إدخال رقم صحيح.', title: 'رقم الكارت غير صالح' };
+        }
+        const expVal = cardExpiryInput.value;
+        if (!/^\d{2}\/\d{2}$/.test(expVal)) {
+          cardExpiryInput.classList.add('field-error');
+          return { ok: false, msg: 'تاريخ الانتهاء غير صالح. يرجى إدخاله بصيغة MM/YY.', title: 'تاريخ غير صالح' };
+        }
+        const mm = parseInt(expVal.slice(0, 2), 10);
+        const yy = parseInt(expVal.slice(3, 5), 10);
+        const now = new Date();
+        const currentYY = now.getFullYear() % 100;
+        const currentMM = now.getMonth() + 1;
+        if (!(mm >= 1 && mm <= 12 && (yy > currentYY || (yy === currentYY && mm >= currentMM)))) {
+          cardExpiryInput.classList.add('field-error');
+          return { ok: false, msg: 'الكارت منتهي الصلاحية. يرجى استخدام كارت صالح.', title: 'كارت منتهي' };
+        }
+        const cvv = cardCvvInput.value;
+        if (!/^\d{3,4}$/.test(cvv)) {
+          cardCvvInput.classList.add('field-error');
+          return { ok: false, msg: 'رمز CVV غير صالح. يجب أن يكون 3 أو 4 أرقام.', title: 'CVV غير صالح' };
+        }
+        return { ok: true };
+      }
+      if (paymentMethod === 'vodafone') {
+        if (!transferScreenshot) {
+          dropzone.classList.add('field-error');
+          return { ok: false, msg: 'يجب إرفاق صورة التحويل (لقطة الشاشة) لإتمام الطلب.', title: 'الصورة مطلوبة' };
+        }
+        const sender = vfSenderInput.value;
+        if (!/^01\d{9}$/.test(sender)) {
+          vfSenderInput.classList.add('field-error');
+          return { ok: false, msg: 'رقم الموبايل المحول منه غير صالح. يجب أن يكون 11 رقم ويبدأ بـ 01.', title: 'رقم الهاتف مطلوب' };
+        }
+        return { ok: true };
+      }
+      return { ok: false, msg: 'لم يتم اختيار طريقة الدفع. يرجى اختيار طريقة أولاً.', title: 'طريقة الدفع مطلوبة' };
+    }
+
+    // ================================================================
+    // FINALIZE ORDER
+    // ================================================================
+    const finalizeBtn = document.getElementById('finalize-order-btn');
+    const finalizeBtnText = document.getElementById('finalize-btn-text');
+
+    function setProcessingUI(processing) {
+      if (processing) {
+        finalizeBtn.disabled = true;
+        finalizeBtn.classList.add('opacity-70', 'cursor-not-allowed');
+        finalizeBtnText.textContent = 'جاري معالجة الطلب...';
+      } else {
+        finalizeBtn.disabled = false;
+        finalizeBtn.classList.remove('opacity-70', 'cursor-not-allowed');
+        finalizeBtnText.textContent = 'تأكيد عملية الدفع';
+      }
+    }
+
+    finalizeBtn.addEventListener('click', async () => {
+      if (isProcessing) return;
+      if (!selectedPkg || !playerId || !paymentMethod) return;
+
+      const validation = validatePaymentData();
+      if (!validation.ok) {
+        showWarning(validation.msg, validation.title);
+        return;
+      }
+
+      // وضع عرض تجريبي: لا يتم تنفيذ دفع حقيقي أو إرسال/حفظ بيانات البطاقة.
+      isProcessing = true;
+      setProcessingUI(true);
+      try {
+        const orderId = 'DEMO-' + Date.now();
+        addHistoryEntry({
+          orderId,
+          date: new Date().toISOString(),
+          playerId,
+          uc: selectedPkg.uc,
+          bonus: selectedPkg.bonus,
+          price: selectedPkg.price,
+          method: paymentMethod
+        });
+
+        showWarning('تم اختبار واجهة الطلب بنجاح. هذا وضع عرض تجريبي فقط؛ لم يتم تحصيل أي مبلغ أو تنفيذ دفع حقيقي.', 'وضع تجريبي');
+        checkoutModal.classList.add('hidden');
+        paymentDetailsLayer.classList.add('hidden');
+        resetUploadUI();
+        clearCardFields();
+        selectedPkg = null;
+        paymentMethod = null;
+        transferScreenshot = null;
+        renderPackages();
+        renderHistory();
+        updatePurchaseButton();
+      } catch (err) {
+        console.warn('Demo order failed', err);
+        showWarning('حدث خطأ أثناء تجربة الواجهة. حاول مرة أخرى.', 'تعذر إكمال التجربة');
+      } finally {
+        isProcessing = false;
+        setProcessingUI(false);
+      }
+    });
+
+    // ================================================================
+    // INIT APP
+    // ================================================================
+    renderPackages();
+    renderTestimonials();
+    renderHistory();
+    initCountdown();
+    updatePurchaseButton();
+    updateIdInputUI();
+
+  </script>
+</body>
+</html>
